@@ -172,8 +172,8 @@ def get_cumulative_rewards_and_steps(env, actor, if_render: bool = False) -> Tup
     for steps in range(max_step):
         tensor_state = torch.as_tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         tensor_action = actor(tensor_state)
-        if if_discrete:
-            tensor_action = tensor_action.argmax(dim=1)
+        # if if_discrete:
+        #    tensor_action = tensor_action.argmax(dim=1)
         action = tensor_action.detach().cpu().numpy()[0]  # not need detach(), because using torch.no_grad() outside
         state, reward, done, _ = env.step(action)
         returns += reward
@@ -205,8 +205,8 @@ def get_cumulative_rewards_and_step_from_vec_env(env, actor) -> List[Tuple[float
     for t in range(max_step):
         action = actor(state.to(device))
         # assert action.shape == (env.env_num, env.action_dim)
-        if if_discrete:
-            action = action.argmax(dim=1, keepdim=True)
+        # if if_discrete:
+        #     action = action.argmax(dim=1, keepdim=True)
         state, reward, done, info_dict = env.step(action)
 
         returns[t] = reward

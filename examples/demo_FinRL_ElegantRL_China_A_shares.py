@@ -1,13 +1,12 @@
-import os
 import time
 import sys
 from copy import deepcopy
 
 import torch
 import torch.nn as nn
-import numpy as np
 import numpy.random as rd
 import pandas as pd
+from ElegantRL.elegantrl.envs import load_data_from_disk
 
 """finance environment
 Source: https://github.com/AI4Finance-Foundation/FinRL-Meta/blob/master/Demo_China_A_share_market.ipynb
@@ -18,10 +17,9 @@ Modify: Github YonV1943
 class StockTradingEnv:
     def __init__(self, initial_amount=1e6, max_stock=1e2, buy_cost_pct=1e-3, sell_cost_pct=1e-3, gamma=0.99,
                  beg_idx=0, end_idx=1113):
-        self.df_pwd = './China_A_shares.pandas.dataframe'
-        self.npz_pwd = './China_A_shares.numpy.npz'
+        print(os.getcwd())
 
-        self.close_ary, self.tech_ary = self.load_data_from_disk()
+        self.close_ary, self.tech_ary = load_data_from_disk()
         self.close_ary = self.close_ary[beg_idx:end_idx]
         self.tech_ary = self.tech_ary[beg_idx:end_idx]
         print(f"| StockTradingEnv: close_ary.shape {self.close_ary.shape}")
@@ -463,7 +461,7 @@ class AgentPPO:
         # assert len(buf_items) == step_i
         # assert len(buf_items[0]) in {4, 5}
         # assert len(buf_items[0][0]) == self.env_num
-        traj_list = [map(list, zip(*traj_list))]  # state, reward, done, action, noise
+        traj_list = list(map(list, zip(*traj_list)))  # state, reward, done, action, noise
         # assert len(buf_items) == {4, 5}
         # assert len(buf_items[0]) == step
         # assert len(buf_items[0][0]) == self.env_num
@@ -488,7 +486,7 @@ class ReplayBufferList(list):  # for on-policy
         list.__init__(self)
 
     def update_buffer(self, traj_list):
-        cur_items = [map(list, zip(*traj_list))]
+        cur_items = list(map(list, zip(*traj_list)))
         self[:] = [torch.cat(item, dim=0) for item in cur_items]
 
         steps = self[1].shape[0]
@@ -682,7 +680,7 @@ def run():
 
 def evaluate_models_in_directory(dir_path=None):
     if dir_path is None:
-        gpu_id = int(sys.argv[1])
+        gpu_id = int(sys.argv[1]) if len(sys.argv) > 1 else 0  # >=0 means GPU ID, -1 means CPU
         dir_path = f'StockTradingEnv-v2_PPO_{gpu_id}'
         print(f"| evaluate_models_in_directory: gpu_id {gpu_id}")
         print(f"| evaluate_models_in_directory: dir_path {dir_path}")
@@ -727,6 +725,6 @@ def evaluate_models_in_directory(dir_path=None):
 
 
 if __name__ == '__main__':
-    check_env()
-    run()
+    # check_env()
+    # run()
     evaluate_models_in_directory()

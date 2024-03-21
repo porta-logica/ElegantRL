@@ -329,9 +329,10 @@ class ActorDiscretePPO(ActorBase):
 
     def get_logprob_entropy(self, state: Tensor, action: Tensor) -> (Tensor, Tensor):
         state = self.state_norm(state)
-        a_prob = self.soft_max(self.net(state))  # action.shape == (batch_size, 1), action.dtype = torch.int
+        a_prob = self.soft_max(self.net(state))
         dist = self.ActionDist(a_prob)
-        logprob = dist.log_prob(action.squeeze(1))
+        # expected action.shape == (batch_size, action_dim, 1), action.dtype = torch.int
+        logprob = dist.log_prob(action.unsqueeze(2))
         entropy = dist.entropy()
         return logprob, entropy
 

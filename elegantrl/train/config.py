@@ -281,8 +281,8 @@ class VecEnv:
 
     def step(self, action: Tensor) -> (Tensor, Tensor, Tensor, List[dict]):  # agent interacts in env
         action = action.detach().cpu().numpy()
-        if self.if_discrete:
-            action = action.squeeze(1)
+        # if self.if_discrete:
+        #     action = action.squeeze(1)
         for pipe, a in zip(self.sub_pipe1s, action):
             pipe.send(a)
 

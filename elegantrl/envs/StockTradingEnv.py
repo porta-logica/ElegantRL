@@ -1,18 +1,14 @@
-import os
-import numpy as np
 import numpy.random as rd
-import pandas as pd
 import torch
-from functorch import vmap
+from torch import vmap
+from ElegantRL.elegantrl.envs import load_data_from_disk
 
 
 class StockTradingEnv:
     def __init__(self, initial_amount=1e6, max_stock=1e2, cost_pct=1e-3, gamma=0.99,
                  beg_idx=0, end_idx=1113):
-        self.df_pwd = './elegantrl/envs/China_A_shares.pandas.dataframe'
-        self.npz_pwd = './elegantrl/envs/China_A_shares.numpy.npz'
 
-        self.close_ary, self.tech_ary = self.load_data_from_disk()
+        self.close_ary, self.tech_ary = load_data_from_disk()
         self.close_ary = self.close_ary[beg_idx:end_idx]
         self.tech_ary = self.tech_ary[beg_idx:end_idx]
         # print(f"| StockTradingEnv: close_ary.shape {self.close_ary.shape}")
@@ -98,42 +94,6 @@ class StockTradingEnv:
         state = self.get_state()
         return state, reward, done, {}
 
-    def load_data_from_disk(self, tech_id_list=None):
-        tech_id_list = [
-            "macd", "boll_ub", "boll_lb", "rsi_30", "cci_30", "dx_30", "close_30_sma", "close_60_sma",
-        ] if tech_id_list is None else tech_id_list
-
-        if os.path.exists(self.npz_pwd):
-            ary_dict = np.load(self.npz_pwd, allow_pickle=True)
-            close_ary = ary_dict['close_ary']
-            tech_ary = ary_dict['tech_ary']
-        elif os.path.exists(self.df_pwd):  # convert pandas.DataFrame to numpy.array
-            df = pd.read_pickle(self.df_pwd)
-
-            tech_ary = []
-            close_ary = []
-            df_len = len(df.index.unique())  # df_len = max_step
-            for day in range(df_len):
-                item = df.loc[day]
-
-                tech_items = [item[tech].values.tolist() for tech in tech_id_list]
-                tech_items_flatten = sum(tech_items, [])
-                tech_ary.append(tech_items_flatten)
-
-                close_ary.append(item.close)
-
-            close_ary = np.array(close_ary)
-            tech_ary = np.array(tech_ary)
-
-            np.savez_compressed(self.npz_pwd, close_ary=close_ary, tech_ary=tech_ary, )
-        else:
-            error_str = f"| StockTradingEnv need {self.df_pwd} or {self.npz_pwd}" \
-                        f"\n  download the following files and save in `.`" \
-                        f"\n  https://github.com/Yonv1943/Python/blob/master/scow/China_A_shares.numpy.npz" \
-                        f"\n  https://github.com/Yonv1943/Python/blob/master/scow/China_A_shares.pandas.dataframe"
-            raise FileNotFoundError(error_str)
-        return close_ary, tech_ary
-
 
 '''function for vmap'''
 
@@ -155,12 +115,10 @@ def _inplace_amount_shares_when_sell(amount, shares, stock_action, close, cost_r
 class StockTradingVecEnv:
     def __init__(self, initial_amount=1e6, max_stock=1e2, cost_pct=1e-3, gamma=0.99,
                  beg_idx=0, end_idx=1113, num_envs=4, gpu_id=0):
-        self.df_pwd = './elegantrl/envs/China_A_shares.pandas.dataframe'
-        self.npz_pwd = './elegantrl/envs/China_A_shares.numpy.npz'
         self.device = torch.device(f"cuda:{gpu_id}" if (torch.cuda.is_available() and (gpu_id >= 0)) else "cpu")
 
         '''load data'''
-        close_ary, tech_ary = self.load_data_from_disk()
+        close_ary, tech_ary = load_data_from_disk()
         close_ary = close_ary[beg_idx:end_idx]
         tech_ary = tech_ary[beg_idx:end_idx]
         self.close_price = torch.tensor(close_ary, dtype=torch.float32, device=self.device)
@@ -307,39 +265,3 @@ class StockTradingVecEnv:
         state = self.reset() if done else self.get_state()  # automatically reset in vectorized env
         done = torch.tensor(done, dtype=torch.bool, device=self.device).expand(self.num_envs)
         return state, reward, done, ()
-
-    def load_data_from_disk(self, tech_id_list=None):
-        tech_id_list = [
-            "macd", "boll_ub", "boll_lb", "rsi_30", "cci_30", "dx_30", "close_30_sma", "close_60_sma",
-        ] if tech_id_list is None else tech_id_list
-
-        if os.path.exists(self.npz_pwd):
-            ary_dict = np.load(self.npz_pwd, allow_pickle=True)
-            close_ary = ary_dict['close_ary']
-            tech_ary = ary_dict['tech_ary']
-        elif os.path.exists(self.df_pwd):  # convert pandas.DataFrame to numpy.array
-            df = pd.read_pickle(self.df_pwd)
-
-            tech_ary = []
-            close_ary = []
-            df_len = len(df.index.unique())  # df_len = max_step
-            for day in range(df_len):
-                item = df.loc[day]
-
-                tech_items = [item[tech].values.tolist() for tech in tech_id_list]
-                tech_items_flatten = sum(tech_items, [])
-                tech_ary.append(tech_items_flatten)
-
-                close_ary.append(item.close)
-
-            close_ary = np.array(close_ary)
-            tech_ary = np.array(tech_ary)
-
-            np.savez_compressed(self.npz_pwd, close_ary=close_ary, tech_ary=tech_ary, )
-        else:
-            error_str = f"| StockTradingEnv need {self.df_pwd} or {self.npz_pwd}" \
-                        f"\n  download the following files and save in `.`" \
-                        f"\n  https://github.com/Yonv1943/Python/blob/master/scow/China_A_shares.numpy.npz" \
-                        f"\n  https://github.com/Yonv1943/Python/blob/master/scow/China_A_shares.pandas.dataframe"
-            raise FileNotFoundError(error_str)
-        return close_ary, tech_ary

@@ -1,11 +1,9 @@
-import os
-
 import torch
-import numpy as np
 import numpy.random as rd
 import pandas as pd
 
-from functorch import vmap
+from torch import vmap
+from ElegantRL.elegantrl.envs import load_data_from_disk
 
 """finance environment
 Source: 
@@ -40,11 +38,10 @@ def _inplace_amount_shares_when_sell(amount, shares, stock_action, close, sell_c
 
 class StockTradingVmapEnv:
     def __init__(self, initial_amount=1e6, max_stock=100, buy_cost_pct=1e-3, sell_cost_pct=1e-3, gamma=0.99,
-                 beg_idx=0, end_idx=1113, gpu_id: int = 0, num_envs: int = 4):
-        self.df_pwd = './China_A_shares.pandas.dataframe'
+                 beg_idx=0, end_idx=1113, gpu_id: int = 0, num_envs: int = 32):
 
         '''load data'''
-        close_ary, tech_ary = self.load_data_from_disk()
+        close_ary, tech_ary = load_data_from_disk()
         close_ary = close_ary[beg_idx:end_idx]
         tech_ary = tech_ary[beg_idx:end_idx]
         print(f"| StockTradingEnv: close_ary.shape {close_ary.shape}")
@@ -172,35 +169,6 @@ class StockTradingVmapEnv:
             self.cumulative_returns = self.cumulative_returns.mean().item()
         done = torch.tensor(done, dtype=torch.bool, device=self.device).expand(self.num_envs)
         return state, reward, done, {}
-
-    def load_data_from_disk(self, tech_id_list=None):
-        tech_id_list = [
-            "macd", "boll_ub", "boll_lb", "rsi_30", "cci_30", "dx_30", "close_30_sma", "close_60_sma",
-        ] if tech_id_list is None else tech_id_list
-
-        if os.path.exists(self.df_pwd):  # convert pandas.DataFrame to numpy.array
-            df = pd.read_pickle(self.df_pwd)
-
-            tech_ary = []
-            close_ary = []
-            df_len = len(df.index.unique())  # df_len = max_step
-            for day in range(df_len):
-                item = df.loc[day]
-
-                tech_items = [item[tech].values.tolist() for tech in tech_id_list]
-                tech_items_flatten = sum(tech_items, [])
-                tech_ary.append(tech_items_flatten)
-
-                close_ary.append(item.close)
-
-            close_ary = np.array(close_ary)
-            tech_ary = np.array(tech_ary)
-        else:
-            error_str = f"| StockTradingEnv need {self.df_pwd}" \
-                        f"\n  download the following files and save in `.`" \
-                        f"\n  https://github.com/Yonv1943/Python/blob/master/scow/China_A_shares.pandas.dataframe (2MB)"
-            raise FileNotFoundError(error_str)
-        return close_ary, tech_ary
 
 
 def check_env():

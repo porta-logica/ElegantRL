@@ -284,14 +284,14 @@ class AgentDiscretePPO(AgentPPO):
             states[t] = state
 
             state, reward, done, _ = env.step(convert(action))  # next_state
-            actions[t] = action
+            actions[t] = action.unsqueeze(1)
             logprobs[t] = logprob
             rewards[t] = reward
             dones[t] = done
 
         self.last_state = state
 
-        actions = actions.unsqueeze(2)
+        # actions = actions.squeeze(2)
         rewards *= self.reward_scale
         undones = 1.0 - dones.type(torch.float32)
         return states, actions, logprobs, rewards, undones

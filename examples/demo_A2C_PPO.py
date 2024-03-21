@@ -332,7 +332,7 @@ def train_ppo_a2c_for_stock_trading():
     agent_class = [AgentPPO, AgentA2C][DRL_ID]  # DRL algorithm name
     env_class = StockTradingEnv
     env_args = {'env_name': 'StockTradingEnv-v2',
-                'num_envs': 1,
+                'num_envs': 32,
                 'max_step': id2 - id1 - 1,
                 'state_dim': 151,
                 'action_dim': 15,
@@ -752,7 +752,7 @@ if __name__ == '__main__':
     Parser = ArgumentParser(description='ArgumentParser for ElegantRL')
     Parser.add_argument('--gpu', type=int, default=0, help='GPU device ID for training')
     Parser.add_argument('--drl', type=int, default=0, help='RL algorithms ID for training')
-    Parser.add_argument('--env', type=str, default='0', help='the environment ID for training')
+    Parser.add_argument('--env', type=str, default='3', help='the environment ID for training')
 
     Args = Parser.parse_args()
     GPU_ID = Args.gpu
@@ -771,7 +771,6 @@ if __name__ == '__main__':
         train_ppo_a2c_for_bipedal_walker()
     elif ENV_ID in {'5', 'bipedal_walker_vec'}:
         train_ppo_a2c_for_bipedal_walker_vec_env()
-
     elif ENV_ID in {'6', 'cartpole'}:
         train_discrete_ppo_a2c_for_cartpole()
     elif ENV_ID in {'7', 'cartpole_vec'}:
@@ -780,5 +779,9 @@ if __name__ == '__main__':
         train_discrete_ppo_a2c_for_lunar_lander()
     elif ENV_ID in {'9', 'lunar_lander_vec'}:
         train_discrete_ppo_a2c_for_lunar_lander_vec_env()
+    elif ENV_ID in {'10', 'stock_trading'}:
+        train_ppo_a2c_for_stock_trading()
+    elif ENV_ID in {'11', 'stock_trading_vec'}:
+        train_ppo_a2c_for_stock_trading_vec_env()
     else:
         print('ENV_ID not match')
