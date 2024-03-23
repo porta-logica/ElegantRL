@@ -1,3 +1,4 @@
+import numpy as np
 import numpy.random as rd
 import torch
 from torch import vmap

@@ -332,7 +332,7 @@ def train_ppo_a2c_for_stock_trading():
     agent_class = [AgentPPO, AgentA2C][DRL_ID]  # DRL algorithm name
     env_class = StockTradingEnv
     env_args = {'env_name': 'StockTradingEnv-v2',
-                'num_envs': 32,
+                'num_envs': 1,
                 'max_step': id2 - id1 - 1,
                 'state_dim': 151,
                 'action_dim': 15,
@@ -752,7 +752,7 @@ if __name__ == '__main__':
     Parser = ArgumentParser(description='ArgumentParser for ElegantRL')
     Parser.add_argument('--gpu', type=int, default=0, help='GPU device ID for training')
     Parser.add_argument('--drl', type=int, default=0, help='RL algorithms ID for training')
-    Parser.add_argument('--env', type=str, default='3', help='the environment ID for training')
+    Parser.add_argument('--env', type=str, default='10', help='the environment ID for training')
 
     Args = Parser.parse_args()
     GPU_ID = Args.gpu
